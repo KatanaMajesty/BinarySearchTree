@@ -27,22 +27,28 @@ template<Comparable T> class BinarySearchTree
 {
 public:
 	using Node = BSTNode<T>;
+
 	BinarySearchTree()
-		: m_Root{nullptr}, m_Size(0)
+		: m_Root{nullptr}
 	{
-		std::cout << "Constructing BST\n";
 	}
 	~BinarySearchTree()
 	{
 		this->Clear(Root());
-		std::cout << "Destroying BST\n";
 	}
 
-	void Insert(const T& value) { m_Root = InnerInsertLval(m_Root, value); }
-	void Insert(T&& value) { m_Root = InnerInsertRval(m_Root, std::move(value)); }
-	Node* Find(const T& value)
+	// void Insert(const T& value) { m_Root = InnerInsert(m_Root, value); }
+	// void Insert(const T& value) { m_Root = InnerInsert(m_Root, value); }
+	void Insert(T&& value) { m_Root = InnerInsert(m_Root, std::forward<T>(value)); }
+	Node* Find(Node* node, const T& value)
 	{
-		return InnerFind(this->Root(), value);
+		if (!node || node->data == value)
+			return node;
+
+		else if (value < node->data)
+			return Find(node->left, value);
+
+		else return Find(node->right, value);
 	}
 	Node* Erase(Node* node, const T& value)
 	{
@@ -59,7 +65,6 @@ public:
 		{
 			if (!node->left && !node->right)
 			{
-				m_Size--;
 				delete node;
 				node = nullptr;
 			}
@@ -84,12 +89,29 @@ public:
  		}
  		return node;
 	}
-	size_t Size() const { return m_Size; }
-	size_t Height() const
+	size_t Size(Node* node) const 
 	{
-		return static_cast<size_t>(InnerHeight(this->Root()));
+		if (!node)
+			return 0;
+
+		size_t rightSize = Size(node->right);
+		size_t leftSize = Size(node->left);
+		return rightSize + leftSize + 1;
 	}
-	void InorderTraversal(const Node* node) const
+	int Height(Node* node) const
+	{
+		if (!node)
+			return -1;
+
+		int rightHeight = Height(node->right);
+		int leftHeight = Height(node->left);
+
+		if (leftHeight > rightHeight)
+			return leftHeight + 1;
+
+		else return rightHeight + 1;
+	}
+	static void InorderTraversal(const Node* node)
 	{
 		if (node)
 		{
@@ -100,7 +122,6 @@ public:
 	}
 	Node* Root() { return this->m_Root; }
 	const Node* Root() const { return this->m_Root; }
-	// returns a vector of pointers
 	std::shared_ptr<std::vector<T>> FindInRange(const T& lhs, const T& rhs)
 	{
 		std::shared_ptr<std::vector<T>> vec = std::make_shared<std::vector<T>>();
@@ -121,25 +142,12 @@ private:
 
 		else 
 		{
-			std::cout << "Adding data: " << node->data << std::endl;
 			vec.push_back(node->data);
 			InnerFindInRange(vec, node->right, lhs, rhs);
 			InnerFindInRange(vec, node->left, lhs, rhs);
 		}
 	}
-	int InnerHeight(const Node* node) const
-	{
-		if (!node)
-			return -1;
 
-		int rightHeight = InnerHeight(node->right);
-		int leftHeight = InnerHeight(node->left);
-
-		if (leftHeight > rightHeight)
-			return leftHeight + 1;
-
-		else return rightHeight + 1;
-	}
 	void Clear(Node* node)
 	{
 		if (!node)
@@ -152,49 +160,86 @@ private:
 			Clear(node->right);
 
 		delete node;
+		node = nullptr;
 	}
-	Node* InnerFind(Node* node, const T& value) const
-	{
-		if (!node || node->data == value)
-			return node;
 
-		else if (value < node->data)
-			return InnerFind(node->left, value);
-
-		else return InnerFind(node->right, value);
-	}
-	Node* InnerInsertLval(Node* node, const T& value)
+	Node* InnerInsert(Node* node, T&& value)
 	{
 		if (!node)
 		{
-			m_Size++;
 			return new Node{.data = value};
 		}
 
 		else if (value < node->data)
-			node->left = InnerInsertLval(node->left, value);
+			node->left = InnerInsert(node->left, std::forward<T>(value));
 
 		else if (node->data < value)
-			node->right = InnerInsertLval(node->right, value);
+			node->right = InnerInsert(node->right, std::forward<T>(value));
 
 		return node;
 	}
-	Node* InnerInsertRval(Node* node, T&& value)
+
+	Node* InnerInsert(Node* node, const T& value)
 	{
 		if (!node)
 		{
-			m_Size++;
-			return new Node{.data = std::move(value)};
+			return new Node{.data = value};
 		}
 
 		else if (value < node->data)
-			node->left = InnerInsertLval(node->left, std::move(value));
+			node->left = InnerInsert(node->left, value);
 
 		else if (node->data < value)
-			node->right = InnerInsertLval(node->right, std::move(value));
+			node->right = InnerInsert(node->right, value);
 
 		return node;
 	}
+
 	Node* m_Root;
-	size_t m_Size;
 };
+
+template<Comparable T> 
+std::pair<BSTNode<T>*, BSTNode<T>*> Split(BSTNode<T>* node, const T& value)
+{
+	using Node = BSTNode<T>;
+	using Pair = std::pair<Node*, Node*>;
+
+	if (!node)
+		return std::make_pair(nullptr, nullptr);
+
+	else if (node->data < value)
+	{
+		Pair pair = Split(node->right, value);
+		node->right = pair.first;
+		return std::make_pair(node, pair.second);
+	}
+	else
+	{
+		Pair pair = Split(node->left, value);
+		node->left = pair.second;
+		return std::make_pair(pair.first, node);
+	}
+}
+
+template<Comparable T> 
+BSTNode<T>* Merge(BSTNode<T>* first, BSTNode<T>* second)
+{
+	using Node = BSTNode<T>;
+
+	if (!first)
+		return second;
+
+	if (!second)
+		return first;
+
+	else if (second->data < first->data)
+	{
+		first->right = Merge(first->right, second);
+		return first;
+	}
+	else
+	{
+		second->left = Merge(first, second->left);
+		return second;
+	}
+}

@@ -120,13 +120,27 @@ public:
 			InorderTraversal(node->right);
 		}
 	}
-	Node* Root() { return this->m_Root; }
-	const Node* Root() const { return this->m_Root; }
+	Node*& Root() { return this->m_Root; }
+	const Node*& Root() const { return this->m_Root; }
 	std::shared_ptr<std::vector<T>> FindInRange(const T& lhs, const T& rhs)
 	{
 		std::shared_ptr<std::vector<T>> vec = std::make_shared<std::vector<T>>();
 		InnerFindInRange(*vec, this->Root(), lhs, rhs);
 		return vec;
+	}
+	static void Clear(Node* node)
+	{
+		if (!node)
+			return;
+		
+		if (node->left)
+			Clear(node->left);
+
+		if (node->right)
+			Clear(node->right);
+
+		delete node;
+		node = nullptr;
 	}
 private:
 	void InnerFindInRange(std::vector<T>& vec, Node* node, const T& lhs, const T& rhs)
@@ -146,21 +160,6 @@ private:
 			InnerFindInRange(vec, node->right, lhs, rhs);
 			InnerFindInRange(vec, node->left, lhs, rhs);
 		}
-	}
-
-	void Clear(Node* node)
-	{
-		if (!node)
-			return;
-		
-		if (node->left)
-			Clear(node->left);
-
-		if (node->right)
-			Clear(node->right);
-
-		delete node;
-		node = nullptr;
 	}
 
 	Node* InnerInsert(Node* node, T&& value)
@@ -242,4 +241,15 @@ BSTNode<T>* Merge(BSTNode<T>* first, BSTNode<T>* second)
 		second->left = Merge(first, second->left);
 		return second;
 	}
+}
+
+template<Comparable T> void EraseRange(BinarySearchTree<T>& tree, const T& lhs, const T& rhs)
+{
+	using Node = BSTNode<T>;
+
+	std::pair<Node*, Node*> firstPair = Split(tree.Root(), lhs);
+	std::pair<Node*, Node*> secondPair = Split(firstPair.second, rhs);
+	BinarySearchTree<T>::Clear(secondPair.first);
+	
+	tree.Root() = Merge(firstPair.first, secondPair.second);
 }

@@ -158,6 +158,21 @@ struct Teacher
 
 int main()
 {
+	using Node = BSTNode<int>;
+	std::cout << "[LOG] Testing BST with testBinarySearchTree() function...\n";
 	testBinarySearchTree<Teacher>();
+	std::cout << "[LOG] Testing BST with testBinarySearchTree() function... - DONE\n";
+	BinarySearchTree<int> tree;
+	for (int i = 0; i < 30; i++)
+	{
+		tree.Insert(std::forward<int>(rand() % 3000));
+	}
+	std::cout << "[LOG] Before EraseRange: \n";
+	tree.InorderTraversal(tree.Root());
+	std::cout << "[LOG] Erasing range...\n";
+	EraseRange(tree, 362, 2387);
+	std::cout << "[LOG] Erasing range... - DONE\n";
+	std::cout << "[LOG] After EraseRange: \n";
+	BinarySearchTree<int>::InorderTraversal(tree.Root());
 	return 0;
 }

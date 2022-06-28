@@ -1,3 +1,0 @@
-/home/katanamanjaro/Documents/ASD/ASD2_LAB4_Folder/build/CMakeFiles/BinarySearchTree.dir
-/home/katanamanjaro/Documents/ASD/ASD2_LAB4_Folder/build/CMakeFiles/edit_cache.dir
-/home/katanamanjaro/Documents/ASD/ASD2_LAB4_Folder/build/CMakeFiles/rebuild_cache.dir
